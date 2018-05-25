@@ -17,8 +17,9 @@ def plot_wave_form(signal, duration, sub):
     plt.plot(x_axis, y_axis)
 
 
-audio = Audio('audio/spring.wav')
-audio.plot_waveform()
+audio = Audio('audio/pirates.wav')
+#audio.plot_waveform()
+onset.hfc(audio)
 
 #rate, data = wavfile.read('audio/spring.wav')
 #first_channel = data[:, 0]

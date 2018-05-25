@@ -13,12 +13,12 @@ class Audio:
         self.overlap = overlap
         self.rate, raw = wavfile.read(file_path)
         self.num_channels = len(raw)
-        self.num_windows = int(self.num_frames / self.window_size)
 
         # transforms to mono
         self.waveform = raw if self.num_channels == 1 else raw[:, 0] + raw[:, 1]
         self.num_frames = len(self.waveform)
         self.duration = self.num_frames / self.rate
+        self.num_windows = int(self.num_frames / self.window_size)
 
         # normalize waveform
         self.waveform = self.waveform / max(self.waveform)

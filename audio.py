@@ -45,6 +45,8 @@ class Audio:
         plt.show()
         plt.plot(self.energy)
         plt.show()
+
+    def plot_spectogram(self):
         plt.pcolormesh(self.spec_time_axis, self.spec_frequency_axis, self.spectogram)
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [sec]')

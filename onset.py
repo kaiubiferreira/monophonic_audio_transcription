@@ -1,87 +1,67 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import signal
-from audio import Audio
 
 
-def energy_gradient(audio):
-    # gets the variation of energy
-    gradient = np.gradient(audio.energy)
+class Onset():
 
-    # discards negative variations for onset detection, since we are interested in the increase of energy
-    gradient = np.array([0 if x < 0 else x for x in gradient])
+    def __init__(self, audio):
+        self.audio = audio
+        #plt.subplot(2, 1, 1)
+        plt.plot(self.hfc())
+        self.adaptive_whitening()
+        #plt.subplot(2, 1, 2)
+        plt.plot(self.hfc())
+        plt.show()
 
-    # log
-    gradient = np.log(gradient + 1)
+    def energy_gradient(self):
+        # gets the variation of energy
+        gradient = np.gradient(self.audio.energy)
 
-    # normalizes derivative
-    gradient = gradient / max(gradient)
+        # discards negative variations for onset detection, since we are interested in the increase of energy
+        gradient = np.array([0 if x < 0 else x for x in gradient])
 
-    plt.plot(gradient)
-    plt.show()
-    return gradient
+        # takes the logarithm to reduce the range and bring the outliers closer to the other points
+        gradient = np.log(gradient + 1)
 
+        # normalizes derivative
+        gradient = gradient / max(gradient)
 
-def hfc(audio):
-    print(audio.spectogram.shape)
-    print(np.transpose(audio.spectogram).shape)
-    print(audio.spec_frequency_axis.shape)
-    print(audio.spec_time_axis.shape)
-    # print(audio.spec_frequency_axis)
-    # audio.plot_waveform()
+        return gradient
 
-    min_index = np.searchsorted(audio.spec_frequency_axis, [3000])[0]
-    print(audio.spec_frequency_axis[min_index])
+    def hfc(self):
+        # disregard lower audible frequencies that might have high values and distort the hfc
+        min_index = np.searchsorted(self.audio.spec_frequency_axis, [2000])[0]
 
-    hfc = np.array([np.sum(np.square(window[min_index:]) * np.arange(min_index, len(window)))  for window in np.transpose(audio.spectogram)])
-    print("hfc shape:")
-    print(hfc.shape)
+        # calculates the HFC
+        hfc_array = np.array([np.sum(np.abs(window[min_index:]) * np.arange(min_index, len(window))) for window in
+                              np.transpose(self.audio.spectogram)])
 
-    hfc = hfc/max(hfc)
-    plt.subplot(2, 1, 1)
-    plt.plot(hfc)
-    #plt.show()
+        # gets the variation of HFC
+        gradient = np.gradient(hfc_array)
 
-    fir = signal.firwin(11, 1.0 / 8, window="hamming")
-    filtered = np.convolve(hfc, fir, mode="same")
-    plt.subplot(2, 1, 2)
-    plt.plot(filtered)
-    plt.show()
+        # discards negative variations for onset detection, since we are interested in the increase of energy
+        gradient = np.array([0 if x < 0 else x for x in gradient])
 
-    masri = [0]
-    for i in range(1, audio.num_windows - 1):
-        masri.append((hfc[i]/hfc[i-1])*(hfc[i]/audio.energy[i]))
+        # normalizes gradient
+        gradient = gradient / max(gradient)
 
-    plt.plot(masri)
-    plt.show()
+        return gradient
 
-    gradient = np.gradient(hfc)
-    gradient = np.array([0 if x < 0 else x for x in gradient])
-    plt.plot(gradient)
-    plt.show()
+    def adaptive_whitening(self, floor=5, relaxation=10):
+        """
+        "Adaptive Whitening For Improved Real-time Audio Onset Detection"
+        Dan Stowel and Mark Plumbley (2007)
+        """
+        mem_coeff = 10.0 ** (-6. * relaxation / self.audio.rate)
+        spectogram = np.transpose(self.audio.spectogram)
+        peaks = []
+        # iterate over all frames
 
-# def hfc(input, window_size, duration, windosw_type=None):
-#     hfc_array = []
-#     hfc_current = 0
-#
-#     for i, window in enumerate(sliding_window(input, window_size, 0)):
-#         window = window * signal.windows.hamming(window_size)
-#         transformed = abs(fftpack.fft(window))[0:int(len(window)/2)]
-#
-#         hfc_previous = hfc_current
-#         hfc_current = np.sum(np.power(transformed, 2) * range(1, len(transformed) + 1))
-#         hfc_array.append(hfc_current)
-#
-#
-#     plt.plot(hfc_array)
-#     plt.show()
-#     fir = signal.firwin(11, 1.0 / 8, window="hamming")
-#     plt.plot(fir)
-#     plt.show()
-#     filtered = np.convolve(hfc_array, fir, mode="same")
-#     plt.plot(filtered)
-#     plt.show()
-#     derivative = np.gradient(filtered)
-#     derivative = np.array([0 if x < 0 else x for x in derivative])
-#     plt.plot(derivative)
-#     plt.show()
+        for window in range(self.audio.num_windows):
+            spec_floor = max(np.max(spectogram[window]), floor)
+            if window > 0:
+                peaks.append(max(spec_floor, mem_coeff * peaks[window - 1]))
+            else:
+                peaks.append(spec_floor)
+
+        self.audio.spectogram = self.audio.spectogram / peaks

@@ -6,6 +6,7 @@ import seaborn as sns
 from audio import Audio
 import onset
 from onset import Onset
+from pitch import Pitch
 
 sns.set()
 
@@ -22,8 +23,10 @@ audio = Audio('audio/spring.wav')
 #audio.plot_waveform()
 #onset.hfc(audio)
 #onset.adaptive_whitening(audio)
-onset = Onset(audio)
+#onset = Onset(audio)
 #onset.hfc()
+pitch = Pitch(audio)
+
 
 #rate, data = wavfile.read('audio/spring.wav')
 #first_channel = data[:, 0]

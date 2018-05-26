@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class Onset():
+class Onset:
 
     def __init__(self, audio):
         self.audio = audio

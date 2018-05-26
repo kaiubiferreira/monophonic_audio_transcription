@@ -6,12 +6,11 @@ class Onset():
 
     def __init__(self, audio):
         self.audio = audio
-        #plt.subplot(2, 1, 1)
-        plt.plot(self.hfc())
-        self.adaptive_whitening()
+        #self.adaptive_whitening()
+        #self.spectral_flux()
         #plt.subplot(2, 1, 2)
-        plt.plot(self.hfc())
-        plt.show()
+        #plt.plot(self.hfc())
+        #plt.show()
 
     def energy_gradient(self):
         # gets the variation of energy
@@ -47,21 +46,43 @@ class Onset():
 
         return gradient
 
+    def spectral_flux(self):
+
+        previous = None
+        flux = []
+        for spectrum in self.audio.spectogram:
+            if previous is None:
+                flux.append(0)
+            else:
+                flux.append(np.sum(((spectrum - previous) + abs(spectrum - previous))/2))
+
+            previous = spectrum
+
+        flux = np.array(flux / max(flux))
+        plt.plot(flux)
+        plt.show()
+
     def adaptive_whitening(self, floor=5, relaxation=10):
         """
         "Adaptive Whitening For Improved Real-time Audio Onset Detection"
         Dan Stowel and Mark Plumbley (2007)
         """
         mem_coeff = 10.0 ** (-6. * relaxation / self.audio.rate)
-        spectogram = np.transpose(self.audio.spectogram)
-        peaks = []
+        peak = None
+        white_spectrum = []
         # iterate over all frames
 
-        for window in range(self.audio.num_windows):
-            spec_floor = max(np.max(spectogram[window]), floor)
-            if window > 0:
-                peaks.append(max(spec_floor, mem_coeff * peaks[window - 1]))
+        for spectrum in self.audio.spectogram:
+            spec_floor = max(np.max(spectrum), floor)
+            if peak is None:
+                peak = spec_floor
             else:
-                peaks.append(spec_floor)
+                peak = max(spec_floor, mem_coeff * peak)
 
-        self.audio.spectogram = self.audio.spectogram / peaks
+            white_spectrum.append(spectrum / peak)
+
+        self.audio.plot_spectogram()
+        print(self.audio.spectogram.shape)
+        self.audio.spectogram = np.array(white_spectrum)
+        print(self.audio.spectogram.shape)
+        self.audio.plot_spectogram()

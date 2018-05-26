@@ -18,12 +18,12 @@ def plot_wave_form(signal, duration, sub):
     plt.plot(x_axis, y_axis)
 
 
-audio = Audio('audio/mario.wav')
+audio = Audio('audio/spring.wav')
 #audio.plot_waveform()
 #onset.hfc(audio)
 #onset.adaptive_whitening(audio)
 onset = Onset(audio)
-onset.hfc()
+#onset.hfc()
 
 #rate, data = wavfile.read('audio/spring.wav')
 #first_channel = data[:, 0]

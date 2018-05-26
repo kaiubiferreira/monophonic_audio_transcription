@@ -39,6 +39,7 @@ class Audio:
                                                                                             nperseg=self.window_size,
                                                                                             mode='magnitude',
                                                                                             noverlap=self.overlap)
+        self.spectogram = np.transpose(self.spectogram)
 
     def plot_waveform(self, downsampling_rate=0.25):
         plt.plot(signal.resample(self.waveform, int(self.num_frames * downsampling_rate)))
@@ -47,7 +48,7 @@ class Audio:
         plt.show()
 
     def plot_spectogram(self):
-        plt.pcolormesh(self.spec_time_axis, self.spec_frequency_axis, self.spectogram)
+        plt.pcolormesh(self.spec_time_axis, self.spec_frequency_axis, np.transpose(self.spectogram))
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [sec]')
         plt.show()

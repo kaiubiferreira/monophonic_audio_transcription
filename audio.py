@@ -15,7 +15,7 @@ class Audio:
         self.num_channels = len(raw)
 
         # transforms to mono
-        self.waveform = raw if self.num_channels == 1 else raw[:, 0] + raw[:, 1]
+        self.waveform = raw[:, 0] + raw[:, 1] if self.num_channels == 2 else raw
         self.num_frames = len(self.waveform)
         self.duration = self.num_frames / self.rate
         self.num_windows = int(self.num_frames / self.window_size)

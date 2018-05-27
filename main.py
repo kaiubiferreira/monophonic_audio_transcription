@@ -19,13 +19,18 @@ def plot_wave_form(signal, duration, sub):
     plt.plot(x_axis, y_axis)
 
 
-audio = Audio('audio/spring.wav')
+audio = Audio('audio/spring_mono.wav')
 #audio.plot_waveform()
 #onset.hfc(audio)
 #onset.adaptive_whitening(audio)
-#onset = Onset(audio)
-#onset.hfc()
-pitch = Pitch(audio)
+onset = Onset(audio)
+onset.get_onsets()
+# x = onset.energy_gradient()
+# print(audio.num_windows)
+# print(len(audio.energy))
+# print(len(x))
+#onset.get_onsets()
+#pitch = Pitch(audio)
 
 
 #rate, data = wavfile.read('audio/spring.wav')

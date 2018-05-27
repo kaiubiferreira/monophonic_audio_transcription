@@ -1,16 +1,50 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-
+import madmom
+from scipy import signal
 
 class Onset:
 
     def __init__(self, audio):
         self.audio = audio
-        #self.adaptive_whitening()
-        #self.spectral_flux()
-        #plt.subplot(2, 1, 2)
-        #plt.plot(self.hfc())
-        #plt.show()
+
+
+    def get_onsets(self):
+        odf = self.superflux()
+        peaks = self.peak_picking(odf)
+        plt.plot(odf)
+        plt.plot(peaks, odf[peaks], 'go')
+        plt.show()
+        return peaks
+
+    def superflux(self):
+        log_filt_spec = madmom.audio.spectrogram.LogarithmicFilteredSpectrogram(self.audio.file_path, num_bands=24)
+        flux = madmom.features.onsets.superflux(log_filt_spec)
+        flux = flux[:len(flux) - 5]
+        flux = flux / max(flux)
+        return flux
+
+    def peak_picking(self, odf, threshold=0.1):
+        return madmom.features.onsets.peak_picking(odf, threshold=0.2, pre_max=10, post_max=10)
+        # median = pd.rolling_median(odf, 7) + threshold
+        # filtered = np.array([0 if x < median[i] else x for i, x in enumerate(odf)])
+        # peaks = np.array([i for i, x in enumerate(filtered) if x > 0])
+        # peaks = np.array([peaks[index] for index, difference in enumerate(np.abs(peaks - np.roll(peaks, 1)))
+        #                    if difference > 3])
+        #
+        # plt.plot(filtered)
+        # plt.plot(peaks, filtered[peaks], 'bo')
+        # plt.show()
+        #
+        # return peaks
+
+
+        #print(list(onsets))
+        #print(list(np.roll(onsets, 1)))
+        #print(list(onsets - np.roll(onsets, 1)))
+
+
 
     def energy_gradient(self):
         # gets the variation of energy
@@ -33,7 +67,10 @@ class Onset:
 
         # calculates the HFC
         hfc_array = np.array([np.sum(np.abs(window[min_index:]) * np.arange(min_index, len(window))) for window in
-                              np.transpose(self.audio.spectogram)])
+                              self.audio.spectogram])
+
+        #plt.plot(hfc_array)
+        #plt.show()
 
         # gets the variation of HFC
         gradient = np.gradient(hfc_array)
@@ -59,8 +96,7 @@ class Onset:
             previous = spectrum
 
         flux = np.array(flux / max(flux))
-        plt.plot(flux)
-        plt.show()
+        return flux
 
     def adaptive_whitening(self, floor=5, relaxation=10):
         """

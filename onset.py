@@ -1,22 +1,28 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import madmom
-from scipy import signal
+
 
 class Onset:
 
     def __init__(self, audio):
         self.audio = audio
+        self.peaks = None
+        self.odf = None
+        self.set_onsets()
 
+    def set_onsets(self):
+        self.odf = self.superflux()
+        self.peaks = self.peak_picking()
 
-    def get_onsets(self):
-        odf = self.superflux()
-        peaks = self.peak_picking(odf)
-        plt.plot(odf)
-        plt.plot(peaks, odf[peaks], 'go')
+    def get_onset(self):
+        to_sec = (self.audio.num_windows / len(self.odf) * self.audio.window_size) / self.audio.rate
+        return self.peaks * to_sec
+
+    def plot_onset(self):
+        plt.plot(self.odf)
+        plt.plot(self.peaks, self.odf[self.peaks], 'bo')
         plt.show()
-        return peaks
 
     def superflux(self):
         log_filt_spec = madmom.audio.spectrogram.LogarithmicFilteredSpectrogram(self.audio.file_path, num_bands=24)
@@ -25,8 +31,8 @@ class Onset:
         flux = flux / max(flux)
         return flux
 
-    def peak_picking(self, odf, threshold=0.1):
-        return madmom.features.onsets.peak_picking(odf, threshold=0.2, pre_max=10, post_max=10)
+    def peak_picking(self):
+        return madmom.features.onsets.peak_picking(self.odf, threshold=0.2, pre_max=10, post_max=10)
         # median = pd.rolling_median(odf, 7) + threshold
         # filtered = np.array([0 if x < median[i] else x for i, x in enumerate(odf)])
         # peaks = np.array([i for i, x in enumerate(filtered) if x > 0])
@@ -39,12 +45,9 @@ class Onset:
         #
         # return peaks
 
-
-        #print(list(onsets))
-        #print(list(np.roll(onsets, 1)))
-        #print(list(onsets - np.roll(onsets, 1)))
-
-
+        # print(list(onsets))
+        # print(list(np.roll(onsets, 1)))
+        # print(list(onsets - np.roll(onsets, 1)))
 
     def energy_gradient(self):
         # gets the variation of energy
@@ -69,8 +72,8 @@ class Onset:
         hfc_array = np.array([np.sum(np.abs(window[min_index:]) * np.arange(min_index, len(window))) for window in
                               self.audio.spectogram])
 
-        #plt.plot(hfc_array)
-        #plt.show()
+        # plt.plot(hfc_array)
+        # plt.show()
 
         # gets the variation of HFC
         gradient = np.gradient(hfc_array)
@@ -91,7 +94,7 @@ class Onset:
             if previous is None:
                 flux.append(0)
             else:
-                flux.append(np.sum(((spectrum - previous) + abs(spectrum - previous))/2))
+                flux.append(np.sum(((spectrum - previous) + abs(spectrum - previous)) / 2))
 
             previous = spectrum
 

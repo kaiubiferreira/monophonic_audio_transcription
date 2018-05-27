@@ -1,20 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pyreaper
-from scipy.signal import find_peaks, medfilt
+from scipy.signal import find_peaks, medfilt, resample
 from scipy import signal, fftpack
+
 
 class Pitch:
     def __init__(self, audio):
         self.audio = audio
-        autocorr = self.autocorrelation()
-        reaper = self.reaper()
-        x = np.linspace(0, self.audio.duration, len(autocorr))
-        plt.plot(x, autocorr)
-        x = np.linspace(0, self.audio.duration, len(reaper))
-        plt.plot(x, reaper)
+        self.f0_list = None
+        self.set_pitch()
 
+    def set_pitch(self):
+        self.f0_list = self.autocorrelation()
+
+    def get_pitch(self):
+        return self.f0_list
+
+    def plot_frequencies(self):
+        x = np.linspace(0, self.audio.duration, len(self.f0_list))
+        plt.plot(x, self.f0_list)
         plt.show()
+
+    def window_to_sec(self, index):
+        return self.audio.duration * index / len(self.f0_list)
 
     def autocorrelation(self):
         autocorr_list = [np.correlate(window, window, 'full') for window in self.audio.windows]
@@ -38,5 +47,3 @@ class Pitch:
         pm_times, pm, f0_times, f0_list, corr = pyreaper.reaper(intWaveForm, self.audio.rate)
 
         return f0_list
-
-

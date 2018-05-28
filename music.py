@@ -15,6 +15,16 @@ class Music:
         self.note_filter()
         # self.plot_pitch_onset()
 
+        # print(self.notes.duration)
+        # plt.plot(self.notes.duration)
+        # plt.show()
+
+        # plt.plot(np.arange(0, self.notes.duration.count()), self.notes.duration.sort_values())
+        # plt.show()
+
+        self.notes['duration'].hist(bins=50)
+        plt.show()
+
     def pitch_filter(self):
         pitch_array = self.pitch.get_pitch()
         onset_array = self.onset.get_onset()

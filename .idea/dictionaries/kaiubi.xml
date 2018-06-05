@@ -2,7 +2,9 @@
   <dictionary name="kaiubi">
     <words>
       <w>downsampling</w>
+      <w>partwise</w>
       <w>spectogram</w>
+      <w>superflux</w>
     </words>
   </dictionary>
 </component>

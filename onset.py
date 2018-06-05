@@ -5,14 +5,15 @@ import madmom
 
 class Onset:
 
-    def __init__(self, audio):
+    def __init__(self, audio, algorithm='superflux'):
         self.audio = audio
         self.peaks = None
         self.odf = None
+        self.algorithm = getattr(self, algorithm)
         self.set_onsets()
 
     def set_onsets(self):
-        self.odf = self.superflux()
+        self.odf = self.algorithm()
         self.peaks = self.peak_picking()
 
     def get_onset(self):
@@ -23,6 +24,9 @@ class Onset:
         plt.plot(self.odf)
         plt.plot(self.peaks, self.odf[self.peaks], 'bo')
         plt.show()
+
+    def get_sample_rate(self):
+        return len(self.odf) / self.audio.duration
 
     def superflux(self):
         log_filt_spec = madmom.audio.spectrogram.LogarithmicFilteredSpectrogram(self.audio.file_path, num_bands=24)
@@ -87,7 +91,6 @@ class Onset:
         return gradient
 
     def spectral_flux(self):
-
         previous = None
         flux = []
         for spectrum in self.audio.spectogram:
@@ -100,28 +103,3 @@ class Onset:
 
         flux = np.array(flux / max(flux))
         return flux
-
-    def adaptive_whitening(self, floor=5, relaxation=10):
-        """
-        "Adaptive Whitening For Improved Real-time Audio Onset Detection"
-        Dan Stowel and Mark Plumbley (2007)
-        """
-        mem_coeff = 10.0 ** (-6. * relaxation / self.audio.rate)
-        peak = None
-        white_spectrum = []
-        # iterate over all frames
-
-        for spectrum in self.audio.spectogram:
-            spec_floor = max(np.max(spectrum), floor)
-            if peak is None:
-                peak = spec_floor
-            else:
-                peak = max(spec_floor, mem_coeff * peak)
-
-            white_spectrum.append(spectrum / peak)
-
-        self.audio.plot_spectogram()
-        print(self.audio.spectogram.shape)
-        self.audio.spectogram = np.array(white_spectrum)
-        print(self.audio.spectogram.shape)
-        self.audio.plot_spectogram()

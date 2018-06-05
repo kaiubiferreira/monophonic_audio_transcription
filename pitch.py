@@ -1,18 +1,19 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pyreaper
-from scipy.signal import find_peaks, medfilt, resample
-from scipy import signal, fftpack
+from scipy.signal import find_peaks, medfilt
 
 
 class Pitch:
-    def __init__(self, audio):
+    def __init__(self, audio, algorithm='reaper'):
         self.audio = audio
         self.f0_list = None
+        self.algorithm = getattr(self, algorithm)
         self.set_pitch()
 
+
     def set_pitch(self):
-        self.f0_list = self.autocorrelation()
+        self.f0_list = self.algorithm()
 
     def get_pitch(self):
         return self.f0_list

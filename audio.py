@@ -1,7 +1,9 @@
-import numpy as np
-from scipy.io import wavfile
-from scipy import signal
 import matplotlib.pyplot as plt
+import numpy as np
+import math
+import os
+from scipy import signal
+from scipy.io import wavfile
 
 
 class Audio:
@@ -9,6 +11,7 @@ class Audio:
     def __init__(self, file_path, window_size=1024, overlap=0):
         # defines metadata
         self.file_path = file_path
+        self.file_name = os.path.basename(file_path).split('.')[0]
         self.window_size = window_size
         self.overlap = overlap
         self.rate, raw = wavfile.read(file_path)
@@ -31,6 +34,13 @@ class Audio:
         # calculates the energy vector
         self.energy = np.array([np.sum(window ** 2) for window in self.windows])
 
+        # calculates the power level in Db
+        self.power = np.array(
+            [10 * math.log10((window / self.window_size) / (math.exp(-12))) for window in self.energy])
+
+        # normalizes energy
+        self.energy /= max(self.energy)
+
         # gets the frequency spectogram for all windows
         self.spec_frequency_axis, self.spec_time_axis, self.spectogram = signal.spectrogram(self.waveform,
                                                                                             self.rate,
@@ -41,10 +51,17 @@ class Audio:
                                                                                             noverlap=self.overlap)
         self.spectogram = np.transpose(self.spectogram)
 
-    def plot_waveform(self, downsampling_rate=0.25):
+    def filter_silence(self):
+        for sample_index, sample in enumerate(self.waveform):
+            window_index = int(sample_index/self.window_size)
+            if window_index < len(self.energy) and window_index < len(self.power):
+                if self.energy[window_index] < 0.001 or self.power[window_index] < 0:
+                    self.waveform[sample_index] = self.energy[window_index] = self.power[window_index] = 0
+            else:
+                self.waveform[sample_index] = 0
+
+    def plot_waveform(self, downsampling_rate=0.125):
         plt.plot(signal.resample(self.waveform, int(self.num_frames * downsampling_rate)))
-        plt.show()
-        plt.plot(self.energy)
         plt.show()
 
     def plot_spectogram(self):

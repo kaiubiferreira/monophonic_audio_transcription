@@ -15,7 +15,7 @@ class Audio:
         self.window_size = window_size
         self.overlap = overlap
         self.rate, raw = wavfile.read(file_path)
-        self.num_channels = len(raw)
+        self.num_channels = 1 if len(raw.shape) == 1 else 2
 
         # transforms to mono
         self.waveform = raw[:, 0] + raw[:, 1] if self.num_channels == 2 else raw
@@ -41,6 +41,9 @@ class Audio:
         # normalizes energy
         self.energy /= max(self.energy)
 
+        # filters silence
+        self.filter_silence()
+
         # gets the frequency spectogram for all windows
         self.spec_frequency_axis, self.spec_time_axis, self.spectogram = signal.spectrogram(self.waveform,
                                                                                             self.rate,
@@ -49,6 +52,7 @@ class Audio:
                                                                                             nperseg=self.window_size,
                                                                                             mode='magnitude',
                                                                                             noverlap=self.overlap)
+
         self.spectogram = np.transpose(self.spectogram)
 
     def filter_silence(self):

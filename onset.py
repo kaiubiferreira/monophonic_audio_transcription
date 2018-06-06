@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import madmom
+import math
 
 
 class Onset:
@@ -23,7 +25,7 @@ class Onset:
     def plot_onset(self):
         plt.plot(self.odf)
         plt.plot(self.peaks, self.odf[self.peaks], 'bo')
-        plt.show()
+        # plt.show()
 
     def get_sample_rate(self):
         return len(self.odf) / self.audio.duration
@@ -35,23 +37,29 @@ class Onset:
         flux = flux / max(flux)
         return flux
 
-    def peak_picking(self):
+    def peak_picking_(self):
         return madmom.features.onsets.peak_picking(self.odf, threshold=0.2, pre_max=10, post_max=10)
-        # median = pd.rolling_median(odf, 7) + threshold
-        # filtered = np.array([0 if x < median[i] else x for i, x in enumerate(odf)])
-        # peaks = np.array([i for i, x in enumerate(filtered) if x > 0])
-        # peaks = np.array([peaks[index] for index, difference in enumerate(np.abs(peaks - np.roll(peaks, 1)))
-        #                    if difference > 3])
-        #
-        # plt.plot(filtered)
-        # plt.plot(peaks, filtered[peaks], 'bo')
-        # plt.show()
-        #
-        # return peaks
 
-        # print(list(onsets))
-        # print(list(np.roll(onsets, 1)))
-        # print(list(onsets - np.roll(onsets, 1)))
+    def peak_picking(self):
+        rollin_window_size = 5
+        minimum_distance = 5
+        median = pd.Series(self.odf).rolling(window=rollin_window_size).mean() + 0.1
+        median[:rollin_window_size-1] = median[rollin_window_size - 1]
+        peaks = []
+        last_index = None
+        for index, value in enumerate(self.odf):
+            if 0 < index < len(self.odf) - 1:
+                if self.odf[index - 1] < self.odf[index] > self.odf[index + 1] and self.odf[index] > median[index]:
+                    if last_index is None or index - last_index > minimum_distance:
+                        peaks.append(index)
+                        last_index = index
+
+        plt.plot(self.odf)
+        plt.plot(median)
+        plt.plot(peaks, self.odf[peaks], 'bo')
+        plt.show()
+
+        return np.array(peaks)
 
     def energy_gradient(self):
         # gets the variation of energy
@@ -76,9 +84,6 @@ class Onset:
         hfc_array = np.array([np.sum(np.abs(window[min_index:]) * np.arange(min_index, len(window))) for window in
                               self.audio.spectogram])
 
-        # plt.plot(hfc_array)
-        # plt.show()
-
         # gets the variation of HFC
         gradient = np.gradient(hfc_array)
 
@@ -102,4 +107,32 @@ class Onset:
             previous = spectrum
 
         flux = np.array(flux / max(flux))
+        return flux
+
+    def superflux2(self):
+        max_spectrogram = np.copy(self.audio.spectogram)
+        for frame_index, frame in enumerate(self.audio.spectogram):
+            for bin_index, bin in enumerate(frame):
+                self.audio.spectogram[frame_index, bin_index] = math.log10(bin + 1)
+
+        for frame_index, frame in enumerate(self.audio.spectogram):
+            for bin_index, bin in enumerate(frame):
+                if (0 < frame_index < len(self.audio.spectogram) - 1) and (0 < bin_index < len(frame)):
+                    max_spectrogram[frame_index, bin_index] = max(self.audio.spectogram[frame_index - 1, bin_index],
+                                                                  self.audio.spectogram[frame_index, bin_index],
+                                                                  self.audio.spectogram[frame_index + 1, bin_index])
+                else:
+                    max_spectrogram[frame_index, bin_index] = 0
+
+        flux = []
+        u = 2
+        for frame_index, frame in enumerate(self.audio.spectogram):
+            if u <= frame_index < len(self.audio.spectogram) - u:
+                flux.append(np.sum(((self.audio.spectogram[frame_index] - self.audio.spectogram[frame_index - u]) + abs(
+                    self.audio.spectogram[frame_index] - self.audio.spectogram[frame_index - u])) / 2))
+            else:
+                flux.append(0)
+
+        flux = np.array(flux / max(flux))
+
         return flux

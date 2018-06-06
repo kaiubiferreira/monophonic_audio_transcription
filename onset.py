@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import madmom
 import math
 
 
@@ -30,20 +29,11 @@ class Onset:
     def get_sample_rate(self):
         return len(self.odf) / self.audio.duration
 
-    def superflux(self):
-        log_filt_spec = madmom.audio.spectrogram.LogarithmicFilteredSpectrogram(self.audio.file_path, num_bands=24)
-        flux = madmom.features.onsets.superflux(log_filt_spec)
-        flux = flux[:len(flux) - 5]
-        flux = flux / max(flux)
-        return flux
-
-    def peak_picking_(self):
-        return madmom.features.onsets.peak_picking(self.odf, threshold=0.2, pre_max=10, post_max=10)
-
     def peak_picking(self):
         rollin_window_size = 5
         minimum_distance = 5
-        median = pd.Series(self.odf).rolling(window=rollin_window_size).mean() + 0.1
+        self.odf = np.log10(self.odf + 1)
+        median = pd.Series(self.odf).rolling(window=rollin_window_size).mean() * 1.5 + 0.01
         median[:rollin_window_size-1] = median[rollin_window_size - 1]
         peaks = []
         last_index = None
@@ -109,7 +99,7 @@ class Onset:
         flux = np.array(flux / max(flux))
         return flux
 
-    def superflux2(self):
+    def superflux(self):
         max_spectrogram = np.copy(self.audio.spectogram)
         for frame_index, frame in enumerate(self.audio.spectogram):
             for bin_index, bin in enumerate(frame):

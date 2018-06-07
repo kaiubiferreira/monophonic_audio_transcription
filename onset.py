@@ -30,25 +30,29 @@ class Onset:
         return len(self.odf) / self.audio.duration
 
     def peak_picking(self):
-        rollin_window_size = 5
+        rolling_window_size = 5
         minimum_distance = 5
         self.odf = np.log10(self.odf + 1)
-        median = pd.Series(self.odf).rolling(window=rollin_window_size).mean() * 1.5 + 0.01
-        median[:rollin_window_size-1] = median[rollin_window_size - 1]
+
+        # Apply a mean rolling window
+        mean = pd.Series(self.odf).rolling(window=rolling_window_size).mean() * 1.5 + 0.01
+
+        # Adjust the first values with indexes smaller than the rolling window size
+        mean[:rolling_window_size-1] = mean[rolling_window_size - 1]
+
         peaks = []
         last_index = None
         for index, value in enumerate(self.odf):
             if 0 < index < len(self.odf) - 1:
-                if self.odf[index - 1] < self.odf[index] > self.odf[index + 1] and self.odf[index] > median[index]:
+                if self.odf[index - 1] < self.odf[index] > self.odf[index + 1] and self.odf[index] > mean[index]:
                     if last_index is None or index - last_index > minimum_distance:
                         peaks.append(index)
                         last_index = index
 
-        plt.plot(self.odf)
-        plt.plot(median)
-        plt.plot(peaks, self.odf[peaks], 'bo')
-        plt.show()
-
+        # plt.plot(self.odf)
+        # plt.plot(mean)
+        # plt.plot(peaks, self.odf[peaks], 'bo')
+        # plt.show()
         return np.array(peaks)
 
     def energy_gradient(self):
@@ -101,10 +105,13 @@ class Onset:
 
     def superflux(self):
         max_spectrogram = np.copy(self.audio.spectogram)
+
+        # Log filters the spectogram
         for frame_index, frame in enumerate(self.audio.spectogram):
             for bin_index, bin in enumerate(frame):
                 self.audio.spectogram[frame_index, bin_index] = math.log10(bin + 1)
 
+        # Gets trajectory tracking
         for frame_index, frame in enumerate(self.audio.spectogram):
             for bin_index, bin in enumerate(frame):
                 if (0 < frame_index < len(self.audio.spectogram) - 1) and (0 < bin_index < len(frame)):
@@ -112,7 +119,7 @@ class Onset:
                                                                   self.audio.spectogram[frame_index, bin_index],
                                                                   self.audio.spectogram[frame_index + 1, bin_index])
                 else:
-                    max_spectrogram[frame_index, bin_index] = 0
+                    max_spectrogram[frame_index, bin_index] = bin
 
         flux = []
         u = 2

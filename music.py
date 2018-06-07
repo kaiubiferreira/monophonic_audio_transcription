@@ -132,7 +132,6 @@ class Music:
                                           '"http://www.musicxml.org/dtds/partwise.dtd">')
 
     def divide_notes(self):
-        # self.measure_size = 1.5
         end_tie = False
         remaining_space = self.measure_size
         measure_id = 1
@@ -329,7 +328,6 @@ class Music:
 
         # separate windows
         oss = oss.reshape(math.ceil(sample_count / window_size), window_size)
-        # print(oss.shape)
 
         hm = pd.Series(dtype=np.dtype('float64'))
         for sample in oss:

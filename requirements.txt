@@ -3,4 +3,5 @@ jupyter>=1.0,<2
 numpy>=1.19,<2
 matplotlib>=3.0,<4
 scipy>=1.5,<2
-lxml>4.6,<5
+lxml>=4.6,<5
+pyreaper>=0.0.8,<1
